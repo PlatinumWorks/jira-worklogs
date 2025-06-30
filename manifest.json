@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Jira Worklog Reporter",
+  "version": "1.0",
+  "description": "Генерирует отчёты по worklogs в Jira",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://jira.secext.samsung.net/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://jira.secext.samsung.net/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
