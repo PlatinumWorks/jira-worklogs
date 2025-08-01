@@ -1,0 +1,23 @@
+{
+  "name": "jira-worklog-reporter",
+  "version": "1.0.0",
+  "description": "Chrome extension для отслеживания времени в Jira",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0"
+  },
+  "keywords": [
+    "chrome-extension",
+    "jira",
+    "worklog",
+    "time-tracking"
+  ],
+  "author": "1",
+  "license": "Private"
+}
