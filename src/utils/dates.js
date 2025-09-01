@@ -92,10 +92,14 @@ export function formatDateForButton(date) {
  */
 export function getCurrentMonthDates() {
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    return getMonthDates(now.getFullYear(), now.getMonth());
+}
 
-    // Получаем первый и последний день текущего месяца
+/**
+ * Возвращает все даты указанного месяца для календарной сетки
+ */
+export function getMonthDates(year, month) {
+    // Получаем первый и последний день месяца
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
 
@@ -111,7 +115,7 @@ export function getCurrentMonthDates() {
         dates.push(null); // null означает пустую ячейку
     }
 
-    // Добавляем все дни текущего месяца
+    // Добавляем все дни указанного месяца
     let currentDate = new Date(firstDay);
     while (currentDate <= lastDay) {
         dates.push(new Date(currentDate));

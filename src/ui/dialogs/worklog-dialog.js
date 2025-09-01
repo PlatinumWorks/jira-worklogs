@@ -16,6 +16,8 @@ import {
     formatDateForInput,
     formatDateRu,
     getCurrentMonthDates,
+    getMonthDates,
+    getMonthName,
     formatDateForButton,
     formatDateForAPI,
     isWorkday
@@ -39,6 +41,10 @@ export class WorklogDialog extends BaseDialog {
         this.selectedHours = null;
         this.isMultiMode = false;
         this.selectedDates = [];
+        
+        const now = new Date();
+        this.selectedYear = now.getFullYear();
+        this.selectedMonth = now.getMonth();
     }
 
     /**
@@ -78,8 +84,15 @@ export class WorklogDialog extends BaseDialog {
         const issueTitle = JiraPageUtils.getCurrentIssueTitle();
 
         this.element.innerHTML = `
-            <h3 style="margin: 0 0 8px 0; color: #333;">Добавить worklog в ${this.issueKey}</h3>
-            <p style="margin: 0 0 20px 0; color: #666; font-size: 13px; line-height: 1.3;">${issueTitle}</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                <div>
+                    <h3 style="margin: 0 0 8px 0; color: #333;">Добавить worklog в ${this.issueKey}</h3>
+                    <p style="margin: 0 0 20px 0; color: #666; font-size: 13px; line-height: 1.3;">${issueTitle}</p>
+                </div>
+                <button id="close-dialog-btn" style="background: none; border: none; font-size: 20px; color: #999; cursor: pointer; padding: 0; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-top: -4px;" title="Закрыть">
+                    ✕
+                </button>
+            </div>
             
             <div style="margin-bottom: 16px;">
                 <label style="display: block; margin-bottom: 10px; font-weight: bold;">Режим выбора даты:</label>
@@ -105,6 +118,17 @@ export class WorklogDialog extends BaseDialog {
             
             <div id="multi-date-container" style="margin-bottom: 16px; display: none;">
                 <label style="display: block; margin-bottom: 6px; font-weight: bold;">Выберите даты:</label>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px; background: #f9f9f9; border-radius: 4px;">
+                    <button type="button" id="prev-month" style="padding: 6px 12px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        ◀ Пред
+                    </button>
+                    <span id="current-month-display" style="font-weight: bold; font-size: 14px; color: #333;"></span>
+                    <button type="button" id="next-month" style="padding: 6px 12px; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        След ▶
+                    </button>
+                </div>
+                
                 <div id="multi-date-selector"></div>
                 <div style="margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <div id="selected-dates-info" style="color: #666; font-size: 14px;"></div>
@@ -153,10 +177,7 @@ export class WorklogDialog extends BaseDialog {
                           style="width: 100%; height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
             </div>
             
-            <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                <button id="cancel-worklog-btn" style="padding: 8px 16px; border: 1px solid #ddd; background: #f5f5f5; border-radius: 4px; cursor: pointer;">
-                    Отмена
-                </button>
+            <div id="action-buttons" style="display: flex; gap: 12px; justify-content: flex-end;">
                 <button id="save-worklog-btn" style="padding: 8px 16px; border: none; background: #36B37E; color: white; border-radius: 4px; cursor: pointer;">
                     Добавить worklog
                 </button>
@@ -171,7 +192,7 @@ export class WorklogDialog extends BaseDialog {
      */
     setupEventHandlers(defaultDateStr, lastHours, savedComments) {
         // Обработчики кнопок
-        this.find('#cancel-worklog-btn').onclick = () => this.remove();
+        this.find('#close-dialog-btn').onclick = () => this.remove();
         this.find('#save-worklog-btn').onclick = () => this.handleSave();
 
         // Настройка компонентов
@@ -252,6 +273,9 @@ export class WorklogDialog extends BaseDialog {
 
         this.find('#apply-multi-dates').addEventListener('click', () => this.applyMultiDates());
         this.find('#reset-multi-dates').addEventListener('click', () => this.resetAllSelectedDates());
+        
+        this.find('#prev-month').addEventListener('click', () => this.navigateMonth(-1));
+        this.find('#next-month').addEventListener('click', () => this.navigateMonth(1));
     }
 
     /**
@@ -300,7 +324,7 @@ export class WorklogDialog extends BaseDialog {
         // Скрываем секции времени, комментариев и кнопок
         const timeSection = this.element.querySelector('#time-presets').parentElement;
         const commentSection = this.element.querySelector('#worklog-comment').parentElement;
-        const buttonsSection = this.element.querySelector('#save-worklog-btn').parentElement;
+        const buttonsSection = this.element.querySelector('#action-buttons');
 
         if (timeSection) timeSection.style.display = 'none';
         if (commentSection) commentSection.style.display = 'none';
@@ -314,7 +338,7 @@ export class WorklogDialog extends BaseDialog {
         // Показываем секции времени, комментариев и кнопок
         const timeSection = this.element.querySelector('#time-presets').parentElement;
         const commentSection = this.element.querySelector('#worklog-comment').parentElement;
-        const buttonsSection = this.element.querySelector('#save-worklog-btn').parentElement;
+        const buttonsSection = this.element.querySelector('#action-buttons');
 
         if (timeSection) timeSection.style.display = 'block';
         if (commentSection) commentSection.style.display = 'block';
@@ -326,7 +350,13 @@ export class WorklogDialog extends BaseDialog {
      */
     generateMultiDateSelector() {
         const selector = this.find('#multi-date-selector');
-        const dates = getCurrentMonthDates();
+        const monthDisplay = this.find('#current-month-display');
+        
+        // Используем выбранный месяц и год вместо текущих
+        const dates = getMonthDates(this.selectedYear, this.selectedMonth);
+        
+        // Обновляем отображение месяца
+        monthDisplay.textContent = `${getMonthName(this.selectedMonth)} ${this.selectedYear}`;
 
         const weekDayHeaders = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -572,5 +602,24 @@ export class WorklogDialog extends BaseDialog {
             padding: 8px 16px; border: 2px solid #ddd; background: #f5f5f5; color: #333; 
             border-radius: 4px; cursor: pointer; font-size: 14px; transition: all 0.2s ease;
         `;
+    }
+
+    /**
+     * Навигация по месяцам
+     */
+    navigateMonth(direction) {
+        this.selectedMonth += direction;
+        
+        // Обработка переходов между годами
+        if (this.selectedMonth < 0) {
+            this.selectedMonth = 11;
+            this.selectedYear--;
+        } else if (this.selectedMonth > 11) {
+            this.selectedMonth = 0;
+            this.selectedYear++;
+        }
+        
+        // Перегенерируем календарь с новым месяцем
+        this.generateMultiDateSelector();
     }
 }
