@@ -319,7 +319,13 @@ export class JiraPageUtils {
     static getCurrentIssueTitle() {
         const summaryElement = document.querySelector('#summary-val');
         if (summaryElement) {
-            // Клонируем элемент и удаляем все дочерние элементы, оставляя только текст
+            // Сначала ищем h2 внутри summary-val
+            const h2Element = summaryElement.querySelector('h2');
+            if (h2Element) {
+                return h2Element.textContent.trim() || 'Без описания';
+            }
+            
+            // Если h2 не найден, клонируем элемент и удаляем ВСЕ дочерние элементы
             const clonedElement = summaryElement.cloneNode(true);
             const childElements = clonedElement.querySelectorAll('*');
             childElements.forEach(child => child.remove());
