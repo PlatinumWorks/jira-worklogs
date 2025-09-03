@@ -51,6 +51,12 @@ export class WorklogDialog extends BaseDialog {
      * Показывает диалог добавления worklog
      */
     show() {
+        // Проверяем, не существует ли уже диалог
+        const existingDialog = document.getElementById(this.id);
+        if (existingDialog) {
+            return;
+        }
+
         this.issueKey = JiraPageUtils.getCurrentIssueKey();
         if (!this.issueKey) {
             showToast("Откройте страницу задачи, чтобы добавить worklog.", 'warning');

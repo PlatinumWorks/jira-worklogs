@@ -376,6 +376,12 @@ export class ReportDialog extends BaseDialog {
  * Показывает диалог выбора даты для отчета
  */
 export function showDatePicker() {
+    // Проверяем, не открыт ли уже диалог
+    const existingDialog = document.getElementById('jira-date-picker');
+    if (existingDialog) {
+        return; // Не создаем новый диалог если уже есть открытый
+    }
+    
     const reportDialog = new ReportDialog();
     reportDialog.show();
 }
